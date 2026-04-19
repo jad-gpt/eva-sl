@@ -3,7 +3,6 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import { invokeLLM } from "./_core/llm";
 import { transcribeAudio } from "./_core/voiceTranscription";
 import { storagePut } from "./storage";
 import {
@@ -80,58 +79,41 @@ const ASL_DESCRIPTIONS: Record<string, string> = {
   Z: "Index finger traces Z in the air",
 };
 
-// ─── Emotion Detection ────────────────────────────────────────────────────────
-async function detectEmotion(text: string, language: string): Promise<{ emotion: EmotionLabel; confidence: number; reasoning: string }> {
-  const response = await invokeLLM({
-    messages: [
-      {
-        role: "system",
-        content: `You are an expert emotion analysis AI for the EVA-SL research system. 
-Analyze the emotional content of speech transcriptions and classify them into exactly one of these seven emotions: happy, sad, angry, neutral, fearful, surprised, disgusted.
-Return a JSON object with: emotion (string), confidence (0.0-1.0), reasoning (brief explanation).
-Be precise and consider linguistic cues, word choice, and context.`,
-      },
-      {
-        role: "user",
-        content: `Analyze the emotion in this ${language === "ar" ? "Arabic" : "English"} speech transcription. Text: "${text}". Return JSON only.`,
-      },
-    ],
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "emotion_analysis",
-        strict: true,
-        schema: {
-          type: "object",
-          properties: {
-            emotion: {
-              type: "string",
-              enum: ["happy", "sad", "angry", "neutral", "fearful", "surprised", "disgusted"],
-            },
-            confidence: { type: "number" },
-            reasoning: { type: "string" },
-          },
-          required: ["emotion", "confidence", "reasoning"],
-          additionalProperties: false,
-        },
-      },
-    },
-  });
+// ─── Emotion Detection (keyword-based, no LLM quota needed) ──────────────────
+function detectEmotion(text: string, _language: string): { emotion: EmotionLabel; confidence: number; reasoning: string } {
+  const t = text.toLowerCase();
 
-  const rawContent = response.choices?.[0]?.message?.content;
-  const content = typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent);
-  if (!content) return { emotion: "neutral", confidence: 0.5, reasoning: "No response" };
+  // Keyword maps for each emotion
+  const emotionKeywords: Record<EmotionLabel, string[]> = {
+    happy: ["happy", "joy", "joyful", "love", "wonderful", "great", "amazing", "excellent", "fantastic", "good", "glad", "pleased", "excited", "celebrate", "fun", "laugh", "smile", "thank", "grateful", "blessed", "awesome", "beautiful", "best", "yay", "hooray", "سعيد", "فرح", "سعادة", "ممتاز", "رائع", "حب"],
+    sad: ["sad", "cry", "crying", "miss", "missing", "lonely", "alone", "depressed", "depression", "unhappy", "grief", "grieve", "mourn", "sorry", "regret", "hurt", "pain", "heartbreak", "broken", "lost", "حزين", "بكاء", "وحيد", "حزن"],
+    angry: ["angry", "anger", "hate", "mad", "furious", "rage", "frustrated", "frustration", "annoyed", "irritated", "upset", "disgusting", "horrible", "terrible", "awful", "stupid", "idiot", "shut up", "damn", "hell", "غاضب", "كره", "غضب"],
+    fearful: ["scared", "fear", "afraid", "terrified", "terror", "panic", "anxious", "anxiety", "nervous", "worried", "worry", "dread", "horror", "nightmare", "خائف", "خوف", "قلق"],
+    surprised: ["surprised", "surprise", "wow", "whoa", "unbelievable", "incredible", "shocking", "shocked", "unexpected", "omg", "oh my", "no way", "really", "seriously", "مفاجأة", "مذهل"],
+    disgusted: ["disgusting", "disgusted", "gross", "nasty", "awful", "horrible", "revolting", "sick", "yuck", "eww", "مقرف", "بشع"],
+    neutral: [],
+  };
 
-  try {
-    const parsed = JSON.parse(content);
-    return {
-      emotion: parsed.emotion as EmotionLabel,
-      confidence: Math.max(0, Math.min(1, parsed.confidence)),
-      reasoning: parsed.reasoning,
-    };
-  } catch {
-    return { emotion: "neutral", confidence: 0.5, reasoning: "Parse error" };
+  let bestEmotion: EmotionLabel = "neutral";
+  let bestScore = 0;
+  let bestMatches: string[] = [];
+
+  for (const [emotion, keywords] of Object.entries(emotionKeywords) as [EmotionLabel, string[]][]) {
+    if (emotion === "neutral") continue;
+    const matches = keywords.filter(kw => t.includes(kw));
+    if (matches.length > bestScore) {
+      bestScore = matches.length;
+      bestEmotion = emotion;
+      bestMatches = matches;
+    }
   }
+
+  const confidence = bestScore === 0 ? 0.5 : Math.min(0.95, 0.6 + bestScore * 0.1);
+  const reasoning = bestScore === 0
+    ? "No strong emotional keywords detected"
+    : `Detected ${bestEmotion} keywords: ${bestMatches.slice(0, 3).join(", ")}`;
+
+  return { emotion: bestEmotion, confidence, reasoning };
 }
 
 // ─── App Router ───────────────────────────────────────────────────────────────
