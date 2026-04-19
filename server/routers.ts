@@ -207,6 +207,47 @@ export const appRouter = router({
         };
       }),
 
+    // Process text directly (no audio — emotion detection + ASL rendering)
+    processText: publicProcedure
+      .input(
+        z.object({
+          text: z.string().min(1).max(2000),
+          language: z.enum(["en", "ar"]).default("en"),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const text = input.text.trim();
+
+        // 1. Detect emotion via LLM
+        const emotionResult = await detectEmotion(text, input.language);
+
+        // 2. Save to DB
+        const userId = ctx.user?.id ?? null;
+        await saveTranslation({
+          userId: userId ?? undefined,
+          originalText: text,
+          language: input.language,
+          emotion: emotionResult.emotion,
+          emotionConfidence: emotionResult.confidence,
+        });
+
+        // 3. Build ASL character array
+        const cleanText = text.toUpperCase().replace(/[^A-Z\s]/g, "");
+        const aslChars = cleanText.split("").map((char) => ({
+          char,
+          imageUrl: char === " " ? null : ASL_SIGN_URLS[char] ?? null,
+        }));
+
+        return {
+          transcription: text,
+          detectedLanguage: input.language,
+          emotion: emotionResult.emotion,
+          emotionConfidence: emotionResult.confidence,
+          emotionReasoning: emotionResult.reasoning,
+          aslChars,
+        };
+      }),
+
     // Get user's translation history
     history: protectedProcedure
       .input(z.object({ limit: z.number().min(1).max(50).default(20) }))

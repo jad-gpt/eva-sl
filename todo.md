@@ -45,3 +45,7 @@
 - [x] Vitest tests for core backend procedures (13 tests, all passing)
 - [x] 404 page updated to EVA-SL dark theme
 - [x] Final checkpoint and delivery
+
+## User Requested Changes
+- [x] Replace audio recording/upload input on Translate page with plain text input
+- [x] Add new tRPC procedure to process text directly (skip Whisper transcription)

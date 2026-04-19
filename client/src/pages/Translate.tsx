@@ -1,11 +1,11 @@
-import { useState, useRef, useCallback } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  Mic, MicOff, Upload, Square, Loader2, Volume2,
-  Globe, Sparkles, RefreshCw, ChevronDown
+  Loader2, Globe, Sparkles, RefreshCw, ChevronDown, Type
 } from "lucide-react";
 
 type Emotion = "happy" | "sad" | "angry" | "neutral" | "fearful" | "surprised" | "disgusted";
@@ -64,84 +64,43 @@ interface TranslationResult {
 
 export default function Translate() {
   const [language, setLanguage] = useState<Language>("en");
-  const [isRecording, setIsRecording] = useState(false);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [inputText, setInputText] = useState("");
   const [result, setResult] = useState<TranslationResult | null>(null);
   const [activeAslIndex, setActiveAslIndex] = useState<number | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
 
-  const uploadMutation = trpc.translation.uploadAudio.useMutation();
-  const processMutation = trpc.translation.process.useMutation();
+  const processTextMutation = trpc.translation.processText.useMutation();
+  const isLoading = processTextMutation.isPending;
 
-  const isLoading = uploadMutation.isPending || processMutation.isPending;
-
-  const startRecording = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-      chunksRef.current = [];
-      recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
-      recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        setAudioBlob(blob);
-        stream.getTracks().forEach((t) => t.stop());
-      };
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      setIsRecording(true);
-    } catch {
-      toast.error("Microphone access denied. Please allow microphone permissions.");
-    }
-  }, []);
-
-  const stopRecording = useCallback(() => {
-    mediaRecorderRef.current?.stop();
-    setIsRecording(false);
-  }, []);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 16 * 1024 * 1024) {
-        toast.error("File too large. Maximum size is 16MB.");
-        return;
-      }
-      setAudioBlob(file);
-      toast.success(`File loaded: ${file.name}`);
-    }
-  };
-
-  const processAudio = async () => {
-    if (!audioBlob) {
-      toast.error("Please record or upload audio first.");
+  const handleTranslate = async () => {
+    const trimmed = inputText.trim();
+    if (!trimmed) {
+      toast.error("Please enter some text first.");
       return;
     }
-
     try {
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      reader.onload = async () => {
-        const base64 = (reader.result as string).split(",")[1];
-        const { url } = await uploadMutation.mutateAsync({
-          audioBase64: base64,
-          mimeType: audioBlob.type || "audio/webm",
-          filename: "recording.webm",
-        });
-
-        const res = await processMutation.mutateAsync({
-          audioUrl: url,
-          language,
-          durationSeconds: undefined,
-        });
-
-        setResult(res as TranslationResult);
-        setActiveAslIndex(null);
-      };
+      const res = await processTextMutation.mutateAsync({
+        text: trimmed,
+        language,
+      });
+      setResult(res as TranslationResult);
+      setActiveAslIndex(null);
     } catch (err) {
       toast.error("Processing failed. Please try again.");
       console.error(err);
     }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleTranslate();
+    }
+  };
+
+  const handleReset = () => {
+    setInputText("");
+    setResult(null);
+    setActiveAslIndex(null);
   };
 
   const emotion = result?.emotion ?? "neutral";
@@ -159,7 +118,7 @@ export default function Translate() {
             EVA-SL Translator
           </h1>
           <p className="text-muted-foreground text-sm">
-            Speak or upload audio — the system handles everything automatically
+            Type your text — the system detects emotion and renders ASL signs automatically
           </p>
         </div>
 
@@ -187,104 +146,67 @@ export default function Translate() {
             </div>
           </div>
 
-          {/* Recording Controls */}
+          {/* Text Input */}
           <div className="glass rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-5">
-              <Mic className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-foreground">Audio Input</span>
+            <div className="flex items-center gap-3 mb-4">
+              <Type className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-foreground">Enter Text</span>
+              <span className="text-xs text-muted-foreground ml-auto">
+                {inputText.length} / 2000
+              </span>
             </div>
-
-            <div className="flex flex-col sm:flex-row gap-4">
-              {/* Microphone */}
-              <div className="flex-1">
-                <button
-                  onClick={isRecording ? stopRecording : startRecording}
-                  disabled={isLoading}
-                  className={`w-full h-24 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${
-                    isRecording
-                      ? "border-destructive bg-destructive/10 text-destructive recording-pulse"
-                      : "border-border/40 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-primary"
-                  }`}
-                >
-                  {isRecording ? (
-                    <>
-                      <div className="flex gap-1 items-end h-6">
-                        {[1,2,3,4,5].map(i => (
-                          <div key={i} className="w-1.5 bg-destructive rounded-full wave-bar" />
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Square className="w-3.5 h-3.5" />
-                        <span className="text-xs font-semibold">Stop Recording</span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Mic className="w-6 h-6" />
-                      <span className="text-xs font-medium">Click to Record</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              <div className="flex items-center justify-center">
-                <span className="text-xs text-muted-foreground font-medium">OR</span>
-              </div>
-
-              {/* File Upload */}
-              <div className="flex-1">
-                <label className="w-full h-24 rounded-xl border-2 border-dashed border-border/40 hover:border-primary/50 hover:bg-primary/5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all text-muted-foreground hover:text-primary">
-                  <Upload className="w-6 h-6" />
-                  <span className="text-xs font-medium">
-                    {audioBlob && !isRecording ? "File Ready ✓" : "Upload Audio File"}
-                  </span>
-                  <span className="text-xs text-muted-foreground/60">MP3, WAV, WebM, M4A (max 16MB)</span>
-                  <input
-                    type="file"
-                    accept="audio/*"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                    disabled={isLoading}
-                  />
-                </label>
-              </div>
-            </div>
-
-            {audioBlob && !isRecording && (
-              <div className="mt-4 flex items-center gap-3 p-3 rounded-xl bg-primary/10 border border-primary/20">
-                <Volume2 className="w-4 h-4 text-primary" />
-                <span className="text-sm text-primary font-medium">Audio ready for processing</span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="ml-auto text-muted-foreground hover:text-foreground"
-                  onClick={() => setAudioBlob(null)}
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            )}
+            <Textarea
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={
+                language === "ar"
+                  ? "اكتب نصك هنا... (اضغط Enter للترجمة)"
+                  : "Type your text here... (Press Enter to translate)"
+              }
+              dir={language === "ar" ? "rtl" : "ltr"}
+              rows={5}
+              maxLength={2000}
+              disabled={isLoading}
+              className="resize-none text-base bg-background/50 border-border/40 focus:border-primary/60 placeholder:text-muted-foreground/50"
+            />
+            <p className="text-xs text-muted-foreground/60 mt-2">
+              Press <kbd className="px-1.5 py-0.5 rounded bg-muted/50 text-xs font-mono">Enter</kbd> to translate · <kbd className="px-1.5 py-0.5 rounded bg-muted/50 text-xs font-mono">Shift+Enter</kbd> for new line
+            </p>
           </div>
 
-          {/* Process Button */}
-          <Button
-            size="lg"
-            className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground glow-purple"
-            onClick={processAudio}
-            disabled={!audioBlob || isLoading || isRecording}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                {uploadMutation.isPending ? "Uploading audio..." : "Analyzing speech & emotion..."}
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5 mr-2" />
-                Translate & Detect Emotion
-              </>
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <Button
+              size="lg"
+              className="flex-1 h-14 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground glow-purple"
+              onClick={handleTranslate}
+              disabled={!inputText.trim() || isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Analyzing emotion &amp; rendering ASL...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Translate &amp; Detect Emotion
+                </>
+              )}
+            </Button>
+            {(inputText || result) && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-14 px-5"
+                onClick={handleReset}
+                disabled={isLoading}
+              >
+                <RefreshCw className="w-5 h-5" />
+              </Button>
             )}
-          </Button>
+          </div>
 
           {/* Results */}
           {result && (
@@ -298,15 +220,13 @@ export default function Translate() {
                 }}
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className="text-3xl">{emotionCfg.emoji}</span>
-                      <div>
-                        <h3 className="text-xl font-display font-bold" style={{ color: emotionCfg.color }}>
-                          {emotionCfg.label}
-                        </h3>
-                        <p className="text-xs text-muted-foreground">{emotionCfg.description}</p>
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{emotionCfg.emoji}</span>
+                    <div>
+                      <h3 className="text-xl font-display font-bold" style={{ color: emotionCfg.color }}>
+                        {emotionCfg.label}
+                      </h3>
+                      <p className="text-xs text-muted-foreground">{emotionCfg.description}</p>
                     </div>
                   </div>
                   <Badge
@@ -334,23 +254,6 @@ export default function Translate() {
                     "{result.emotionReasoning}"
                   </p>
                 )}
-              </div>
-
-              {/* Transcription */}
-              <div className="glass rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <Volume2 className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium text-foreground">Transcription</span>
-                  <Badge variant="outline" className="text-xs ml-auto">
-                    {result.detectedLanguage?.toUpperCase() ?? language.toUpperCase()}
-                  </Badge>
-                </div>
-                <p
-                  className="text-foreground leading-relaxed"
-                  dir={language === "ar" ? "rtl" : "ltr"}
-                >
-                  {result.transcription || <span className="text-muted-foreground italic">No speech detected</span>}
-                </p>
               </div>
 
               {/* ASL Rendering */}
