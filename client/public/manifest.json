@@ -1,0 +1,99 @@
+{
+  "name": "EVA-SL — Emotion-Aware Sign Language",
+  "short_name": "EVA-SL",
+  "description": "Real-time emotion-adaptive speech to sign language translation. ISEF 2026 research project by Jad Alghazzawi.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0f1e",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "categories": ["education", "accessibility", "medical"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/translate.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "Translate — Emotion-Adaptive ASL Rendering"
+    },
+    {
+      "src": "/screenshots/character.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "Hugo — 3D Sign Language Character"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Translate",
+      "short_name": "Translate",
+      "description": "Open the translation interface",
+      "url": "/translate",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "ASL Gallery",
+      "short_name": "Gallery",
+      "description": "Browse all ASL hand signs",
+      "url": "/asl-gallery",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Character",
+      "short_name": "Hugo",
+      "description": "Interact with Hugo the signing character",
+      "url": "/character",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+    }
+  ]
+}

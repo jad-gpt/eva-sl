@@ -3,7 +3,7 @@ import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
-import { Menu, X, Brain, Mic, BookOpen, Database, BarChart3, FlaskConical, History, LogOut, LogIn } from "lucide-react";
+import { Menu, X, Brain, Mic, BookOpen, Database, BarChart3, FlaskConical, History, LogOut, LogIn, User } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/translate", label: "Translate", icon: Mic },
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { href: "/research", label: "Research", icon: FlaskConical },
   { href: "/history", label: "History", icon: History },
+  { href: "/character", label: "Character", icon: User },
 ];
 
 export default function Navbar() {

@@ -11,6 +11,7 @@ import DatasetBuilder from "./pages/DatasetBuilder";
 import Dashboard from "./pages/Dashboard";
 import Research from "./pages/Research";
 import History from "./pages/History";
+import CharacterViewer from "./pages/CharacterViewer";
 import Navbar from "./components/Navbar";
 
 function Router() {
@@ -25,6 +26,7 @@ function Router() {
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/research" component={Research} />
         <Route path="/history" component={History} />
+        <Route path="/character" component={CharacterViewer} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

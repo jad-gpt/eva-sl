@@ -1,26 +1,78 @@
 <!doctype html>
 <html lang="en">
-
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>EVA-SL: Emotion-Aware Speech to Sign Language Translation</title>    
-    <!-- THIS IS THE START OF A COMMENT BLOCK, BLOCK TO BE DELETED: Google Fonts here, example:
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5" />
+
+    <!-- Primary Meta -->
+    <title>EVA-SL — Emotion-Aware Sign Language Translation</title>
+    <meta name="description" content="EVA-SL: Real-time emotion-adaptive speech to ASL/ArSL sign language translation. ISEF 2026 research project by Jad Alghazzawi, Dar Al-Fikr School, Jeddah, Saudi Arabia." />
+    <meta name="author" content="Jad Alghazzawi" />
+    <meta name="keywords" content="sign language, ASL, ArSL, emotion detection, AI, accessibility, ISEF, EVA-SL, BASIR" />
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="EVA-SL" />
+    <meta name="application-name" content="EVA-SL" />
+    <meta name="msapplication-TileColor" content="#0a0f1e" />
+    <meta name="msapplication-TileImage" content="/icons/icon-144.png" />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="EVA-SL — Emotion-Aware Sign Language Translation" />
+    <meta property="og:description" content="Real-time emotion-adaptive speech to ASL/ArSL sign language translation. ISEF 2026 research project." />
+    <meta property="og:image" content="/icons/icon-512.png" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="EVA-SL — Emotion-Aware Sign Language Translation" />
+    <meta name="twitter:description" content="ISEF 2026: Real-time emotion-adaptive ASL/ArSL translation with 3D character Hugo." />
+    <meta name="twitter:image" content="/icons/icon-512.png" />
+
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    THIS IS THE END OF A COMMENT BLOCK, BLOCK TO BE DELETED -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/icons/icon-192.png" as="image" />
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Analytics -->
     <script
       defer
       src="%VITE_ANALYTICS_ENDPOINT%/umami"
       data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
-  </body>
 
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(function(reg) {
+              console.log('[EVA-SL] Service Worker registered:', reg.scope);
+            })
+            .catch(function(err) {
+              console.warn('[EVA-SL] Service Worker registration failed:', err);
+            });
+        });
+      }
+    </script>
+  </body>
 </html>

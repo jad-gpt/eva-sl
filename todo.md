@@ -49,3 +49,35 @@
 ## User Requested Changes
 - [x] Replace audio recording/upload input on Translate page with plain text input
 - [x] Add new tRPC procedure to process text directly (skip Whisper transcription)
+
+## Objective Execution (4-Part Build)
+
+### Objective 1: ASL + Fingerspelling Dataset (JSON Keypoints)
+- [x] Generate ASL keypoint JSON for all 26 letters (A–Z) in MediaPipe Holistic format
+- [x] Generate keypoint JSON for numbers 0–9
+- [x] Generate keypoint JSON for 100 high-frequency ASL phrases/words
+- [x] Each entry: hand landmarks (21), body pose landmarks (33), label, handedness, confidence
+
+### Objective 2: 3D Character + player.js
+- [x] Create rigged humanoid GLB character compatible with Three.js
+- [x] Build player.js module: accepts string → plays sign animation sequence
+- [x] Smooth interpolated transitions between signs
+- [x] Integrate character viewer into Translate page
+
+### Objective 3: ArSL + Emotional Blending
+- [x] Add ArSL fingerspelling for 28 Arabic letters in same keypoint format
+- [x] Define 7 emotional body postures (happy/sad/angry/neutral/fearful/surprised/disgusted)
+- [x] Blend emotional posture as base layer while character signs
+
+### Objective 4: Dataset Augmentation + ISEF Metrics
+- [x] 5 augmented variations per keypoint entry (rotation, scale, noise)
+- [x] Confidence scores per landmark (0.0–1.0)
+- [x] Secondary motion: finger curl, breathing, eye blink, head movement
+- [x] ISEF metrics table: per-sign accuracy, DTW transition score, comprehension
+
+### Objective 5: PWA Conversion
+- [x] Add service worker (Workbox) for offline support
+- [x] Add Web App Manifest (manifest.json)
+- [x] iOS + Android installable (Add to Home Screen / Chrome install prompt)
+- [x] Cache ASL dataset and character model locally
+- [x] App icon 1024×1024, splash screen
